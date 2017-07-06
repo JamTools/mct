@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+
+# determine parent directory
+# since '/' cannot be in a directory name, this is safe
+parentDir=`echo $PWD | rev | grep -o "/.*" | rev`
+
+# extract album name from folder location
+album=`echo $PWD | rev | sed -e "s/\/.\+//" | rev`
+
+# set IFS to newline only while reading to array
+IFS=$'\n'
+# extract list of files to process/convert
+files=(`find . -regextype posix-egrep -iregex '.+.(flac|m4a|mp4|mp3)$' | sort | sed 's/^..//'`)
+# unset IFS to allow all whitespaces
+unset IFS
+
+for f in "${files[@]}"; do
+  artist=`ffprobe -loglevel error -show_entries format_tags=artist -of default=noprint_wrappers=1:nokey=1 "$f"`
+  break # exit loop after first file
+done
+
+# print name and options
+echo -e "\nMusic Convert & Tag (mct):"
+echo -e "Parent Directory: $parentDir"
+
+# ask to confirm $artist & $album
+read -e -p "Artist: " -i "$artist" artist
+read -e -p "Album: " -i "$album" albumconfirm
+
+# strip invalid chars from album
+albumconfirm=`echo "$albumconfirm" | sed -e 's/[^a-zA-Z0-9 -,\.&]//g'`
+echo -e "Album (sanitized): $albumconfirm"
+
+# estabish bitrate
+read -e -p "Bitrate: " -i "320" bitrate
+if [[ "$bitrate" -eq "320" ]]; then
+  bitrate="-b:a 320k"
+elif [[ "$bitrate" -eq "256" ]]; then
+  bitrate="-qscale:a 0"
+else
+  # do not convert, just process
+  bitrate=""
+fi
+
+echo -e "\nFiles to process:\n$files\n"
+
+# delete source files?
+read -r -p "Delete source files after processing? [y/N] " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+  echo -e "Source files will be deleted.\n"
+  delsrc=true
+else
+  echo -e "Source files will NOT be deleted.\n"
+  delsrc=false
+fi
+
+# create 'mct' directory (if doesn't exist)
+if [ ! -d "$PWD/mct" ]; then
+  mkdir mct
+fi
+
+# check for folder.jpg
+if [ ! -e "$PWD/folder.jpg" ]; then
+  # extract folder.jpg from file
+  for f in ${files//\\n/ }; do
+    ffmpeg -i "$f" folder.jpg; break
+  done
+
+  if [ -e "$PWD/folder.jpg" ]; then
+    # optimize folder.jpg to 500px @ 90% quality
+    convert folder.jpg -resize 500 -quality 90 folder.jpg
+  fi
+else
+  # already have image; try to optimize
+  if [ ! -e "$PWD/folder-original.jpg" ]; then
+    convert folder.jpg -resize 500 -quality 90 folder1.jpg
+    if [ $(stat -c%s folder1.jpg) -lt $(stat -c%s folder.jpg) ]; then
+      mv folder.jpg folder-original.jpg
+      mv folder1.jpg folder.jpg
+    fi
+  fi
+fi
+
+# read files
+for f in "${files[@]}"; do
+
+  mp3match=`echo "$f" | sed -n '/\.mp3$/Ip'`
+  if [ "$bitrate" == "" -o "$mp3match" != "" ]; then
+    # just copy
+    convert="-c:a copy"
+  else
+    # convert using lame
+    convert="-codec:a libmp3lame $bitrate"
+  fi
+
+  # process file with ffmpeg
+  if [ -e "$PWD/folder.jpg" ]; then
+    ffmpeg -i "$f" -i folder.jpg -map 0:a $convert \
+    -metadata artist="$artist" -metadata album_artist="$artist" -metadata album="$albumconfirm" \
+    -map 1:v -c:v copy -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" \
+    -id3v2_version 4 "mct/${f%.*}.mp3"
+  else
+    ffmpeg -i "$f" -map 0:a $convert \
+    -metadata artist="$artist" -metadata album_artist="$artist" -metadata album="$albumconfirm" \
+    -id3v2_version 4 "mct/${f%.*}.mp3"
+  fi
+
+  if [ "$delsrc" = true ]; then
+    rm "$f"
+  fi
+done
+
+# move files from subdirectory
+if [ "$delsrc" = true ]; then
+  mv mct/* ./
+  rm -r mct
+
+  # rename folder to match album
+  if [ "$album" != "$albumconfirm" ]; then
+    mv "$PWD" "$parentDir$albumconfirm"
+  fi
+fi
+
+echo -e "\nMusic Convert And Tag: Completed!\n"
