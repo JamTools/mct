@@ -10,7 +10,7 @@ album=`echo $PWD | rev | sed -e "s/\/.\+//" | rev`
 # set IFS to newline only while reading to array
 IFS=$'\n'
 # extract list of files to process/convert
-files=(`find . -regextype posix-egrep -iregex '.+.(flac|m4a|mp4|mp3)$' | sort | sed 's/^..//'`)
+files=(`find . -regextype posix-egrep -iregex '.+.(flac|m4a|mp4|mp3|shn)$' | sort | sed 's/^..//'`)
 # unset IFS to allow all whitespaces
 unset IFS
 
@@ -42,7 +42,11 @@ else
   bitrate=""
 fi
 
-echo -e "\nFiles to process:\n$files\n"
+echo -e "\nFiles to process:"
+for f in "${files[@]}"; do
+  echo -e "$f"
+done
+echo -e ""
 
 # delete source files?
 read -r -p "Delete source files after processing? [y/N] " response

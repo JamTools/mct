@@ -1,12 +1,12 @@
 # mct (Music Convert & Tag)
 
-This converts 16/24 bit `FLAC` or `ALAC` music files to (VBR 256kbps) or (CBR 320kbps) `MP3` using `lame` encoding.
+This converts 16/24 bit `FLAC` or `ALAC` or 'SHN' music files to (VBR 256kbps) or (CBR 320kbps) `MP3` using `lame` encoding.
 
 If content is already `MP3`, it does not re-encode. However, it still proceeds with additional processing.
 
 ## Additional Processing
 
-Aside from converting (if necessary), it proceeds with the following:
+Aside from converting audio (if necessary), it proceeds with the following:
 
 ### Album Art
 
@@ -34,11 +34,18 @@ Install `ffmpeg`, `lame`, and `imagemagick`, do:
 $ sudo apt-get install ffmpeg lame libmp3lame0 imagemagick
 ```
 
-From this path, make executable & symlink `mct` to user's bin directory:
+From this path, symlink `mct` to user's bin directory:
 
 ```
-chmod +x mct
 ln -s `pwd`/mct ~/bin/
+```
+
+### Updates
+
+To install updates; from this path, run:
+
+```
+git pull
 ```
 
 ## Usage
@@ -48,7 +55,3 @@ Open the path containing the files you wish to convert, then run:
 ```
 mct
 ```
-
-## Notes
-
-This project was inspired from my initial [FLAC/ALAC to mp3](../audio-flac-alac-to-mp3.md) guide.
