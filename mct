@@ -10,7 +10,7 @@ album=`echo $PWD | rev | sed -e "s/\/.\+//" | rev`
 # set IFS to newline only while reading to array
 IFS=$'\n'
 # extract list of files to process/convert
-files=(`find . -regextype posix-egrep -iregex '.+.(flac|m4a|mp4|mp3|shn)$' | sort | sed 's/^..//'`)
+files=(`find . -regextype posix-egrep -iregex '.+.(mp3|flac|m4a|mp4|shn|wav)$' | sort | sed 's/^..//'`)
 # unset IFS to allow all whitespaces
 unset IFS
 
@@ -58,6 +58,16 @@ else
   delsrc=false
 fi
 
+# pause before point of no return
+read -r -p "Proceed with above options? [y/N] " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+  echo -e "\nStarting..."
+else
+  echo -e "\nNo changes made."
+  echo -e "\nMusic Convert & Tag: Exited!\n"
+  exit 1
+fi
+
 # create 'mct' directory (if doesn't exist)
 if [ ! -d "$PWD/mct" ]; then
   mkdir mct
@@ -85,9 +95,9 @@ else
   fi
 fi
 
-# read files
 for f in "${files[@]}"; do
 
+  # determine if mp3 or other
   mp3match=`echo "$f" | sed -n '/\.mp3$/Ip'`
   if [ "$bitrate" == "" -o "$mp3match" != "" ]; then
     # just copy
@@ -99,30 +109,33 @@ for f in "${files[@]}"; do
 
   # process file with ffmpeg
   if [ -e "$PWD/folder.jpg" ]; then
+    # include folder.jpg
     ffmpeg -i "$f" -i folder.jpg -map 0:a $convert \
     -metadata artist="$artist" -metadata album_artist="$artist" -metadata album="$albumconfirm" \
     -map 1:v -c:v copy -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" \
     -id3v2_version 4 "mct/${f%.*}.mp3"
   else
+    # don't include folder.jpg
     ffmpeg -i "$f" -map 0:a $convert \
     -metadata artist="$artist" -metadata album_artist="$artist" -metadata album="$albumconfirm" \
     -id3v2_version 4 "mct/${f%.*}.mp3"
   fi
-
-  if [ "$delsrc" = true ]; then
-    rm "$f"
-  fi
 done
 
-# move files from subdirectory
 if [ "$delsrc" = true ]; then
+  # delete source files
+  for f in "${files[@]}"; do
+    rm "$f"
+  done
+
+  # move mp3s out & remove 'mct'
   mv mct/* ./
   rm -r mct
-
-  # rename folder to match album
-  if [ "$album" != "$albumconfirm" ]; then
-    mv "$PWD" "$parentDir$albumconfirm"
-  fi
 fi
 
-echo -e "\nMusic Convert And Tag: Completed!\n"
+# rename folder to match album
+if [ "$album" != "$albumconfirm" ]; then
+  mv "$PWD" "$parentDir$albumconfirm"
+fi
+
+echo -e "\nMusic Convert & Tag: Completed!\n"

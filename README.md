@@ -1,6 +1,6 @@
 # mct (Music Convert & Tag)
 
-This converts 16/24 bit `FLAC` or `ALAC` or `SHN` audio files to (VBR 256kbps) or (CBR 320kbps) `MP3` using `lame` encoding.
+This converts 16/24 bit `FLAC`, `M4A`, `MP4`, `SHN` or `WAV` audio files to (`VBR` 256kbps) or (`CBR` 320kbps) `MP3` using `lame` encoding.
 
 If content is already `MP3`, it does not re-encode. However, it still proceeds with additional processing.
 
