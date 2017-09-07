@@ -68,30 +68,29 @@ else
   exit 1
 fi
 
-# create 'mct' directory (if doesn't exist)
-if [ ! -d "$PWD/mct" ]; then
-  mkdir mct
+# create 'mct' directory
+if [ -d "$PWD/mct" ]; then
+  rm -rf "$PWD/mct"
 fi
+mkdir "$PWD/mct"
 
 # check for folder.jpg
 if [ ! -e "$PWD/folder.jpg" ]; then
   # extract folder.jpg from file
-  for f in ${files//\\n/ }; do
+  for f in "${files[@]}"; do
     ffmpeg -i "$f" folder.jpg; break
   done
+fi
 
-  if [ -e "$PWD/folder.jpg" ]; then
-    # optimize folder.jpg to 500px @ 90% quality
-    convert folder.jpg -resize 500 -quality 90 folder.jpg
-  fi
-else
-  # already have image; try to optimize
-  if [ ! -e "$PWD/folder-original.jpg" ]; then
-    convert folder.jpg -resize 500 -quality 90 folder1.jpg
-    if [ $(stat -c%s folder1.jpg) -lt $(stat -c%s folder.jpg) ]; then
-      mv folder.jpg folder-original.jpg
-      mv folder1.jpg folder.jpg
-    fi
+# optimize image to 500px
+if [ -e "$PWD/folder.jpg" ]; then
+  ffmpeg -y -i "folder.jpg" -qscale:v 2 -vf scale=500:-1 "folder1.jpg"
+  # take the smallest file size
+  if [ $(stat -c%s folder1.jpg) -lt $(stat -c%s folder.jpg) ]; then
+    rm -f folder.jpg
+    mv folder1.jpg folder.jpg
+  else
+    rm -f folder1.jpg
   fi
 fi
 

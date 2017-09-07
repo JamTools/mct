@@ -12,11 +12,9 @@ Aside from converting audio (if necessary), it proceeds with the following:
 
 It looks to `folder.jpg` with the directory or the artwork image embedded within the first music file.
 
-Then it optimizes this image using `imagemagick`, scaling it to `500px` with image quality at `90%`.
+Then it optimizes the image, scaling it to `500px` while maintaining aspect ratio.
 
-This results in a `jpeg` image roughly 100KB in size.
-
-Finally, it embedds this optimized image within each `MP3` file.
+This results in a small-sized `jpeg` image that is embedded within each `MP3` file.
 
 ### ID3v2 Tagging
 
@@ -28,10 +26,10 @@ It asks to confirm the `album` tag, which it assumes is the parent folder of the
 
 ## Installation
 
-Install `ffmpeg`, `lame`, and `imagemagick`, do:
+Install `ffmpeg` and `lame`, do:
 
 ```
-$ sudo apt-get install ffmpeg lame libmp3lame0 imagemagick
+$ sudo apt-get install ffmpeg lame libmp3lame0
 ```
 
 From this path, symlink `mct` to user's bin directory:
